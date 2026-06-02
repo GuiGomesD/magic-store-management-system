@@ -1,0 +1,108 @@
+<style>
+#cd svg .divider path { stroke-opacity: 0.5; }
+#cd { width: 100%; padding: 1rem 0; overflow-x: auto; }
+#cd svg { max-width: 100%; height: auto; }
+</style>
+<div id="cd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryBorderColor: dark ? '#AFA9EC' : '#534AB7',
+    primaryTextColor: dark ? '#CECBF6' : '#26215C',
+  },
+});
+const src = `classDiagram
+  direction LR
+  class Cliente {
+    <<actor>>
+    +int id
+    +String nome
+    +String email
+    +String endereco
+  }
+  class Administrador {
+    <<actor>>
+    +int id
+    +String nome
+    +String login
+    +String senha
+  }
+  class TelaCompra {
+    <<boundary>>
+    +finalizarCompra()
+  }
+  class PainelAdmin {
+    <<boundary>>
+    +cadastrarProduto()
+    +listarPedidos()
+  }
+  class ControleCompra {
+    <<control>>
+    +processarCompra()
+  }
+  class ControleAdmin {
+    <<control>>
+    +gerenciarProduto()
+    +revisarPedido()
+  }
+  class Pedido {
+    <<entity>>
+    +Date data
+    +String status
+    +float total
+  }
+  class Produto {
+    <<entity>>
+    +String nome
+    +float preco
+    +int estoque
+  }
+  class Pagamento {
+    <<entity>>
+    +String metodo
+    +String status
+  }
+  Cliente --> TelaCompra
+  Administrador --> PainelAdmin
+  TelaCompra --> ControleCompra
+  PainelAdmin --> ControleAdmin
+  ControleCompra --> Pedido
+  ControleAdmin --> Produto
+  ControleAdmin --> Pedido
+  Pedido "*" --> "*" Produto : contem
+  Pedido "1" --> "1" Pagamento : gera`;
+const { svg } = await mermaid.render('cd-svg', src);
+document.getElementById('cd').innerHTML = svg;
+
+document.querySelectorAll('#cd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [], ys = [];
+  for (let i = 0; i < nums.length - 1; i += 2) { xs.push(nums[i]); ys.push(nums[i+1]); }
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+</script>
