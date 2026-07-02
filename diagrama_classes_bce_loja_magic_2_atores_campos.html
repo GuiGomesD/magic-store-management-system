@@ -11,11 +11,11 @@ await document.fonts.ready;
 mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
-  fontFamily: '"Anthropic Sans", sans-serif',
+  fontFamily: 'Arial, sans-serif',
   themeVariables: {
     darkMode: dark,
     fontSize: '13px',
-    fontFamily: '"Anthropic Sans", sans-serif',
+    fontFamily: 'Arial, sans-serif',
     lineColor: dark ? '#9c9a92' : '#73726c',
     textColor: dark ? '#c2c0b6' : '#3d3d3a',
     primaryColor: dark ? '#3C3489' : '#EEEDFE',
@@ -25,64 +25,128 @@ mermaid.initialize({
 });
 const src = `classDiagram
   direction LR
+
   class Cliente {
     <<actor>>
-    +int id
-    +String nome
-    +String email
-    +String endereco
+    +acessarSistema()
+    +fazerLogin()
+    +fazerCadastro()
   }
+
   class Administrador {
     <<actor>>
-    +int id
-    +String nome
-    +String login
-    +String senha
+    +acessarSistema()
+    +fazerLogin()
   }
-  class TelaCompra {
+
+  class TelaInicial {
     <<boundary>>
-    +finalizarCompra()
+    +abrirLogin()
   }
+
+  class TelaLogin {
+    <<boundary>>
+    +informarLogin()
+    +informarSenha()
+    +entrar()
+    +abrirCadastro()
+  }
+
+  class TelaCadastroUsuario {
+    <<boundary>>
+    +informarNome()
+    +informarEmail()
+    +informarLogin()
+    +informarSenha()
+    +cadastrar()
+  }
+
   class PainelAdmin {
     <<boundary>>
     +cadastrarProduto()
     +listarPedidos()
   }
-  class ControleCompra {
+
+  class ControleUsuario {
     <<control>>
-    +processarCompra()
+    -UsuarioRepository repositorio
+    +adicionarUsuario(nome, email, login, senha)
+    +autenticarUsuario(login, senha)
+    +listarUsuarios()
+    -validarLogin(login)
+    -validarSenha(senha)
   }
-  class ControleAdmin {
-    <<control>>
-    +gerenciarProduto()
-    +revisarPedido()
-  }
-  class Pedido {
+
+  class Usuario {
     <<entity>>
-    +Date data
-    +String status
-    +float total
-  }
-  class Produto {
-    <<entity>>
+    +int id
     +String nome
-    +float preco
-    +int estoque
+    +String email
+    +String login
+    +String senha
+    +String perfil
   }
-  class Pagamento {
+
+  class UsuarioRepository {
     <<entity>>
-    +String metodo
-    +String status
+    +salvar(usuario)
+    +buscarTodos()
+    +buscarPorLogin(login)
+    +existeEmail(email)
+    +existeLogin(login)
+    +gerarProximoId()
   }
-  Cliente --> TelaCompra
-  Administrador --> PainelAdmin
-  TelaCompra --> ControleCompra
-  PainelAdmin --> ControleAdmin
-  ControleCompra --> Pedido
-  ControleAdmin --> Produto
-  ControleAdmin --> Pedido
-  Pedido "*" --> "*" Produto : contem
-  Pedido "1" --> "1" Pagamento : gera`;
+
+  class UsuarioMemoriaRepository {
+    <<entity>>
+    -Map usuarios
+  }
+
+  class UsuarioArquivoBinarioRepository {
+    <<entity>>
+    -String caminhoArquivo
+    +carregarDoArquivo()
+    +salvarNoArquivo()
+  }
+
+  class DadosInvalidosError {
+    <<exception>>
+  }
+
+  class EmailDuplicadoError {
+    <<exception>>
+  }
+
+  class LoginDuplicadoError {
+    <<exception>>
+  }
+
+  class CredenciaisInvalidasError {
+    <<exception>>
+  }
+
+  class PersistenciaError {
+    <<exception>>
+  }
+
+  Cliente --> TelaInicial : acessa
+  Administrador --> TelaInicial : acessa
+  TelaInicial --> TelaLogin : botão Login
+  TelaLogin --> TelaCadastroUsuario : botão Cadastro
+  TelaLogin --> ControleUsuario : autenticar
+  TelaCadastroUsuario --> ControleUsuario : cadastrar cliente
+  ControleUsuario --> Usuario : cria/autentica
+  ControleUsuario --> UsuarioRepository : usa
+  UsuarioRepository <|-- UsuarioMemoriaRepository
+  UsuarioRepository <|-- UsuarioArquivoBinarioRepository
+  UsuarioRepository --> Usuario : armazena
+  UsuarioArquivoBinarioRepository ..> PersistenciaError : IOException
+  ControleUsuario ..> DadosInvalidosError : login/senha inválidos
+  ControleUsuario ..> EmailDuplicadoError : e-mail duplicado
+  ControleUsuario ..> LoginDuplicadoError : login duplicado
+  ControleUsuario ..> CredenciaisInvalidasError : credenciais inválidas
+  Administrador --> PainelAdmin : após login
+  PainelAdmin --> ControleUsuario : listar usuários`;
 const { svg } = await mermaid.render('cd-svg', src);
 document.getElementById('cd').innerHTML = svg;
 
