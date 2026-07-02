@@ -1,5 +1,3 @@
-import os
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.schemas import UsuarioCriacao, UsuarioLogin, UsuarioResposta
@@ -11,30 +9,13 @@ from app.domain.excecoes import (
     PersistenciaError,
 )
 from app.domain.usuario import Usuario
-from app.repository.usuario_repository import (
-    UsuarioArquivoBinarioRepository,
-    UsuarioRepository,
-)
-from app.service.gerenciador_usuarios import GerenciadorUsuarios
-
-
-def criar_repositorio() -> UsuarioRepository:
-    tipo_persistencia = os.getenv("WIZARDRY_PERSISTENCIA", "memoria").lower()
-
-    if tipo_persistencia == "arquivo":
-        return UsuarioArquivoBinarioRepository()
-
-    return UsuarioRepository()
-
-
-repositorio_compartilhado = criar_repositorio()
-gerenciador_compartilhado = GerenciadorUsuarios(repositorio_compartilhado)
+from app.service.facade_controller import FacadeSingletonController
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 
-def obter_gerenciador() -> GerenciadorUsuarios:
-    return gerenciador_compartilhado
+def obter_facade() -> FacadeSingletonController:
+    return FacadeSingletonController.obter_instancia()
 
 
 def converter_para_resposta(usuario: Usuario) -> UsuarioResposta:
@@ -43,21 +24,13 @@ def converter_para_resposta(usuario: Usuario) -> UsuarioResposta:
         nome=usuario.nome,
         email=usuario.email,
         login=usuario.login,
+        perfil=usuario.perfil,
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=UsuarioResposta)
-def criar_usuario(
-    dados: UsuarioCriacao,
-    gerenciador: GerenciadorUsuarios = Depends(obter_gerenciador),
-) -> UsuarioResposta:
+def _cadastrar(cadastrar, dados: UsuarioCriacao) -> UsuarioResposta:
     try:
-        usuario = gerenciador.adicionar_usuario(
-            dados.nome,
-            dados.email,
-            dados.login,
-            dados.senha,
-        )
+        usuario = cadastrar(dados.nome, dados.email, dados.login, dados.senha)
     except DadosInvalidosError as erro:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -77,13 +50,31 @@ def criar_usuario(
     return converter_para_resposta(usuario)
 
 
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=UsuarioResposta)
+def criar_usuario(
+    dados: UsuarioCriacao,
+    facade: FacadeSingletonController = Depends(obter_facade),
+) -> UsuarioResposta:
+    return _cadastrar(facade.cadastrar_usuario, dados)
+
+
+@router.post(
+    "/gerentes", status_code=status.HTTP_201_CREATED, response_model=UsuarioResposta
+)
+def criar_gerente(
+    dados: UsuarioCriacao,
+    facade: FacadeSingletonController = Depends(obter_facade),
+) -> UsuarioResposta:
+    return _cadastrar(facade.cadastrar_gerente, dados)
+
+
 @router.post("/login", response_model=UsuarioResposta)
 def autenticar_usuario(
     dados: UsuarioLogin,
-    gerenciador: GerenciadorUsuarios = Depends(obter_gerenciador),
+    facade: FacadeSingletonController = Depends(obter_facade),
 ) -> UsuarioResposta:
     try:
-        usuario = gerenciador.autenticar_usuario(dados.login, dados.senha)
+        usuario = facade.autenticar_usuario(dados.login, dados.senha)
     except CredenciaisInvalidasError as erro:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -100,7 +91,7 @@ def autenticar_usuario(
 
 @router.get("", response_model=list[UsuarioResposta])
 def listar_usuarios(
-    gerenciador: GerenciadorUsuarios = Depends(obter_gerenciador),
+    facade: FacadeSingletonController = Depends(obter_facade),
 ) -> list[UsuarioResposta]:
-    usuarios = gerenciador.listar_usuarios()
+    usuarios = facade.listar_usuarios()
     return [converter_para_resposta(usuario) for usuario in usuarios]

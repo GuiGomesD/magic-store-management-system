@@ -32,6 +32,17 @@ def test_deve_adicionar_usuario_com_sucesso(gerenciador: GerenciadorUsuarios) ->
     assert usuarios[0].email == "ana@email.com"
     assert usuarios[0].login == "anasilva"
     assert usuarios[0].senha == "Senha123"
+    assert usuarios[0].perfil == "cliente"
+
+
+def test_deve_cadastrar_usuario_com_perfil_gerente(
+    gerenciador: GerenciadorUsuarios,
+) -> None:
+    gerente = gerenciador.adicionar_usuario(
+        "Ana Silva", "ana@email.com", "anasilva", "Senha123", "gerente"
+    )
+
+    assert gerente.perfil == "gerente"
 
 
 def test_deve_rejeitar_usuario_com_nome_vazio(gerenciador: GerenciadorUsuarios) -> None:

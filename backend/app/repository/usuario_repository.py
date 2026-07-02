@@ -22,6 +22,9 @@ class UsuarioRepository:
     def buscar_todos(self) -> list[Usuario]:
         return list(self._usuarios.values())
 
+    def buscar_por_id(self, id: int) -> Usuario | None:
+        return self._usuarios.get(id)
+
     def buscar_por_login(self, login: str) -> Usuario | None:
         login_normalizado = login.strip().lower()
         for usuario in self._usuarios.values():

@@ -132,9 +132,12 @@ export default function PaginaCadastro() {
             </p>
           )}
 
-          <div style={{ marginTop: "1rem" }}>
+          <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>
             <Link className="link-button secondary-button" href="/login">
               Voltar para login
+            </Link>
+            <Link className="link-button" href="/admin">
+              Painel do gerente
             </Link>
           </div>
         </section>
@@ -161,6 +164,9 @@ export default function PaginaCadastro() {
                   <th style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>
                     Login
                   </th>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>
+                    Perfil
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -170,6 +176,24 @@ export default function PaginaCadastro() {
                     <td style={{ padding: "0.5rem 0" }}>{usuario.nome}</td>
                     <td style={{ padding: "0.5rem 0" }}>{usuario.email}</td>
                     <td style={{ padding: "0.5rem 0" }}>{usuario.login}</td>
+                    <td style={{ padding: "0.5rem 0" }}>
+                      {usuario.perfil === "gerente" ? (
+                        <span
+                          style={{
+                            background: "#534ab7",
+                            color: "#fff",
+                            borderRadius: "999px",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            padding: "0.15rem 0.6rem",
+                          }}
+                        >
+                          Gerente
+                        </span>
+                      ) : (
+                        <span style={{ color: "#777" }}>Cliente</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

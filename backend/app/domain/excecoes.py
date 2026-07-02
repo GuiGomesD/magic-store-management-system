@@ -14,6 +14,10 @@ class UsuarioNaoEncontradoError(Exception):
     pass
 
 
+class ProdutoNaoEncontradoError(Exception):
+    pass
+
+
 class CredenciaisInvalidasError(Exception):
     pass
 

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.produto_router import router as produtos_router
 from app.api.router import router as usuarios_router
 
 ORIGEM_FRONTEND = "http://localhost:3000"
@@ -16,6 +17,7 @@ app.add_middleware(
 )
 
 app.include_router(usuarios_router)
+app.include_router(produtos_router)
 
 
 @app.get("/health")

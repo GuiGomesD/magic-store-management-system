@@ -18,3 +18,32 @@ class UsuarioResposta(BaseModel):
     nome: str
     email: str
     login: str
+    perfil: str
+
+
+class ProdutoCriacao(BaseModel):
+    nome: str
+    tipo: str
+    preco: float
+    quantidade_estoque: int
+    gerente_id: int
+
+
+class ProdutoAtualizacao(BaseModel):
+    nome: str
+    tipo: str
+    preco: float
+    quantidade_estoque: int
+
+
+class ProdutoResposta(BaseModel):
+    id: int
+    nome: str
+    tipo: str
+    preco: float
+    quantidade_estoque: int
+    gerente_id: int
+
+
+class QuantidadeEntidadesResposta(BaseModel):
+    quantidade: int

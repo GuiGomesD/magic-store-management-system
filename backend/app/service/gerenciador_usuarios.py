@@ -4,7 +4,7 @@ from app.domain.excecoes import (
     EmailDuplicadoError,
     LoginDuplicadoError,
 )
-from app.domain.usuario import Usuario
+from app.domain.usuario import PERFIL_CLIENTE, PERFIS_PERMITIDOS, Usuario
 from app.repository.usuario_repository import UsuarioRepository
 
 CARACTERES_ESPECIAIS_AWS = set("!@#$%^&*()_+-=[]{}|'")
@@ -17,15 +17,24 @@ class GerenciadorUsuarios:
     def __init__(self, repositorio: UsuarioRepository) -> None:
         self._repositorio = repositorio
 
-    def adicionar_usuario(self, nome: str, email: str, login: str, senha: str) -> Usuario:
+    def adicionar_usuario(
+        self,
+        nome: str,
+        email: str,
+        login: str,
+        senha: str,
+        perfil: str = PERFIL_CLIENTE,
+    ) -> Usuario:
         nome_tratado = nome.strip()
         email_tratado = email.strip()
         login_tratado = login.strip()
+        perfil_tratado = perfil.strip().lower()
 
         self._validar_nome(nome_tratado)
         self._validar_email(email_tratado)
         self._validar_login(login_tratado)
         self._validar_senha(senha)
+        self._validar_perfil(perfil_tratado)
 
         if self._repositorio.existe_email(email_tratado):
             raise EmailDuplicadoError("E-mail já cadastrado")
@@ -39,6 +48,7 @@ class GerenciadorUsuarios:
             email=email_tratado,
             login=login_tratado,
             senha=senha,
+            perfil=perfil_tratado,
         )
         return self._repositorio.salvar(usuario)
 
@@ -60,6 +70,10 @@ class GerenciadorUsuarios:
     def _validar_nome(self, nome: str) -> None:
         if not nome:
             raise DadosInvalidosError("Nome não pode ser vazio")
+
+    def _validar_perfil(self, perfil: str) -> None:
+        if perfil not in PERFIS_PERMITIDOS:
+            raise DadosInvalidosError("Perfil inválido. Use: cliente ou gerente")
 
     def _validar_email(self, email: str) -> None:
         if not email or "@" not in email:
