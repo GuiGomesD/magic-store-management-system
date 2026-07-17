@@ -4,11 +4,14 @@ from pathlib import Path
 
 from app.domain.excecoes import PersistenciaError
 from app.domain.produto import Produto
+from app.business.interfaces.produto_repository_interface import (
+    ProdutoRepositoryInterface,
+)
 
 ID_INICIAL = 1
 
 
-class ProdutoRepository:
+class ProdutoRepository(ProdutoRepositoryInterface):
     """Repositório em memória RAM."""
 
     def __init__(self) -> None:

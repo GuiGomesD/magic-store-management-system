@@ -5,7 +5,9 @@ from app.domain.excecoes import (
     LoginDuplicadoError,
 )
 from app.domain.usuario import PERFIL_CLIENTE, PERFIS_PERMITIDOS, Usuario
-from backend.app.infra.repositories.usuario_repository import UsuarioRepository
+from app.business.interfaces.usuario_repository_interface import (
+    UsuarioRepositoryInterface,
+)
 
 CARACTERES_ESPECIAIS_AWS = set("!@#$%^&*()_+-=[]{}|'")
 TAMANHO_MINIMO_SENHA_AWS = 8
@@ -14,7 +16,7 @@ TAMANHO_MAXIMO_LOGIN = 12
 
 
 class GerenciadorUsuarios:
-    def __init__(self, repositorio: UsuarioRepository) -> None:
+    def __init__(self, repositorio: UsuarioRepositoryInterface) -> None:
         self._repositorio = repositorio
 
     def adicionar_usuario(

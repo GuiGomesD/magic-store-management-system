@@ -4,11 +4,14 @@ from pathlib import Path
 
 from app.domain.excecoes import PersistenciaError
 from app.domain.usuario import Usuario
+from app.business.interfaces.usuario_repository_interface import (
+    UsuarioRepositoryInterface,
+)
 
 ID_INICIAL = 1
 
 
-class UsuarioRepository:
+class UsuarioRepository(UsuarioRepositoryInterface):
     """Repositório em memória RAM."""
 
     def __init__(self) -> None:

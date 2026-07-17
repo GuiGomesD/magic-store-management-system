@@ -5,8 +5,13 @@ from app.domain.excecoes import (
 )
 from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_GERENTE
-from backend.app.infra.repositories.produto_repository import ProdutoRepository
-from backend.app.infra.repositories.usuario_repository import UsuarioRepository
+from app.business.interfaces.produto_repository_interface import (
+    ProdutoRepositoryInterface,
+)
+
+from app.business.interfaces.usuario_repository_interface import (
+    UsuarioRepositoryInterface,
+)
 
 TIPOS_PERMITIDOS = frozenset({"carta", "booster", "deck", "acessorio"})
 
@@ -16,8 +21,8 @@ class GerenciadorProdutos:
 
     def __init__(
         self,
-        repositorio: ProdutoRepository,
-        repositorio_usuarios: UsuarioRepository,
+        repositorio: ProdutoRepositoryInterface,
+        repositorio_usuarios: UsuarioRepositoryInterface,
     ) -> None:
         self._repositorio = repositorio
         self._repositorio_usuarios = repositorio_usuarios
