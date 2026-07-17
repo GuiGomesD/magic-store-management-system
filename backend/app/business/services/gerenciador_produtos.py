@@ -5,6 +5,7 @@ from app.domain.excecoes import (
 )
 from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_GERENTE
+from app.business.interfaces.logger_interface import LoggerInterface, LoggerNulo
 from app.business.interfaces.produto_repository_interface import (
     ProdutoRepositoryInterface,
 )
@@ -23,9 +24,11 @@ class GerenciadorProdutos:
         self,
         repositorio: ProdutoRepositoryInterface,
         repositorio_usuarios: UsuarioRepositoryInterface,
+        logger: LoggerInterface | None = None,
     ) -> None:
         self._repositorio = repositorio
         self._repositorio_usuarios = repositorio_usuarios
+        self._logger = logger or LoggerNulo()
 
     def adicionar_produto(
         self,
@@ -52,7 +55,9 @@ class GerenciadorProdutos:
             quantidade_estoque=quantidade_estoque,
             gerente_id=gerente_id,
         )
-        return self._repositorio.salvar(produto)
+        produto_salvo = self._repositorio.salvar(produto)
+        self._logger.info(f"Produto '{nome_tratado}' cadastrado pelo gerente {gerente_id}")
+        return produto_salvo
 
     def listar_produtos(self) -> list[Produto]:
         return self._repositorio.buscar_todos()
@@ -85,11 +90,15 @@ class GerenciadorProdutos:
         produto.tipo = tipo_tratado
         produto.preco = preco
         produto.quantidade_estoque = quantidade_estoque
-        return self._repositorio.salvar(produto)
+        produto_atualizado = self._repositorio.salvar(produto)
+        self._logger.info(f"Produto {id} atualizado")
+        return produto_atualizado
 
     def remover_produto(self, id: int) -> None:
         if not self._repositorio.remover(id):
+            self._logger.erro(f"Tentativa de remover produto inexistente: {id}")
             raise ProdutoNaoEncontradoError("Produto não encontrado")
+        self._logger.info(f"Produto {id} removido")
 
     def contar_produtos(self) -> int:
         return self._repositorio.contar()

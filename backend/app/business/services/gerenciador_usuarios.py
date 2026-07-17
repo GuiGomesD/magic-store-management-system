@@ -5,6 +5,7 @@ from app.domain.excecoes import (
     LoginDuplicadoError,
 )
 from app.domain.usuario import PERFIL_CLIENTE, PERFIS_PERMITIDOS, Usuario
+from app.business.interfaces.logger_interface import LoggerInterface, LoggerNulo
 from app.business.interfaces.usuario_repository_interface import (
     UsuarioRepositoryInterface,
 )
@@ -16,8 +17,13 @@ TAMANHO_MAXIMO_LOGIN = 12
 
 
 class GerenciadorUsuarios:
-    def __init__(self, repositorio: UsuarioRepositoryInterface) -> None:
+    def __init__(
+        self,
+        repositorio: UsuarioRepositoryInterface,
+        logger: LoggerInterface | None = None,
+    ) -> None:
         self._repositorio = repositorio
+        self._logger = logger or LoggerNulo()
 
     def adicionar_usuario(
         self,
@@ -52,7 +58,9 @@ class GerenciadorUsuarios:
             senha=senha,
             perfil=perfil_tratado,
         )
-        return self._repositorio.salvar(usuario)
+        usuario_salvo = self._repositorio.salvar(usuario)
+        self._logger.info(f"Usuário '{login_tratado}' cadastrado com perfil '{perfil_tratado}'")
+        return usuario_salvo
 
     def autenticar_usuario(self, login: str, senha: str) -> Usuario:
         login_tratado = login.strip()
@@ -62,8 +70,10 @@ class GerenciadorUsuarios:
 
         usuario = self._repositorio.buscar_por_login(login_tratado)
         if usuario is None or usuario.senha != senha:
+            self._logger.erro(f"Falha de autenticação para o login '{login_tratado}'")
             raise CredenciaisInvalidasError("Login ou senha inválidos")
 
+        self._logger.info(f"Usuário '{login_tratado}' autenticado com sucesso")
         return usuario
 
     def listar_usuarios(self) -> list[Usuario]:

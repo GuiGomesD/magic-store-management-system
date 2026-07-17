@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_CLIENTE, PERFIL_GERENTE, Usuario
+from app.infra.logging.logging_lib_adapter import LoggingLibAdapter
 from app.infra.repositories.repository_factory import RepositoryFactory
 from app.business.services.gerenciador_produtos import GerenciadorProdutos
 from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
@@ -29,10 +30,12 @@ class FacadeSingletonController:
         fabrica = RepositoryFactory.obter_fabrica()
         repositorio_usuarios = fabrica.criar_repositorio_usuarios()
         repositorio_produtos = fabrica.criar_repositorio_produtos()
-        self._gerenciador_usuarios = GerenciadorUsuarios(repositorio_usuarios)
+        logger = LoggingLibAdapter()
+        self._gerenciador_usuarios = GerenciadorUsuarios(repositorio_usuarios, logger)
         self._gerenciador_produtos = GerenciadorProdutos(
             repositorio_produtos,
             repositorio_usuarios,
+            logger,
         )
 
     @classmethod
