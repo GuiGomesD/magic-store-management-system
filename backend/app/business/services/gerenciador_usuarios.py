@@ -1,11 +1,18 @@
+from datetime import datetime
+
 from app.domain.excecoes import (
     CredenciaisInvalidasError,
     DadosInvalidosError,
     EmailDuplicadoError,
     LoginDuplicadoError,
 )
+from app.domain.registro_acesso import RegistroAcesso
 from app.domain.usuario import PERFIL_CLIENTE, PERFIS_PERMITIDOS, Usuario
 from app.business.interfaces.logger_interface import LoggerInterface, LoggerNulo
+from app.business.interfaces.registro_acesso_repository_interface import (
+    RegistroAcessoRepositoryInterface,
+    RegistroAcessoRepositoryNulo,
+)
 from app.business.interfaces.usuario_repository_interface import (
     UsuarioRepositoryInterface,
 )
@@ -21,9 +28,11 @@ class GerenciadorUsuarios:
         self,
         repositorio: UsuarioRepositoryInterface,
         logger: LoggerInterface | None = None,
+        repositorio_acessos: RegistroAcessoRepositoryInterface | None = None,
     ) -> None:
         self._repositorio = repositorio
         self._logger = logger or LoggerNulo()
+        self._repositorio_acessos = repositorio_acessos or RegistroAcessoRepositoryNulo()
 
     def adicionar_usuario(
         self,
@@ -74,6 +83,14 @@ class GerenciadorUsuarios:
             raise CredenciaisInvalidasError("Login ou senha inválidos")
 
         self._logger.info(f"Usuário '{login_tratado}' autenticado com sucesso")
+        self._repositorio_acessos.salvar(
+            RegistroAcesso(
+                id=self._repositorio_acessos.gerar_proximo_id(),
+                usuario_id=usuario.id,
+                login=usuario.login,
+                momento=datetime.now(),
+            )
+        )
         return usuario
 
     def listar_usuarios(self) -> list[Usuario]:

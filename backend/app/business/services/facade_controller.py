@@ -4,8 +4,12 @@ from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_CLIENTE, PERFIL_GERENTE, Usuario
 from app.infra.logging.logging_lib_adapter import LoggingLibAdapter
 from app.infra.repositories.repository_factory import RepositoryFactory
+from app.business.relatorios.relatorio_acesso_html import RelatorioAcessoHTML
+from app.business.relatorios.relatorio_acesso_pdf import RelatorioAcessoPDF
 from app.business.services.gerenciador_produtos import GerenciadorProdutos
 from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
+
+FORMATO_RELATORIO_PDF = "pdf"
 
 
 class FacadeSingletonController:
@@ -30,8 +34,13 @@ class FacadeSingletonController:
         fabrica = RepositoryFactory.obter_fabrica()
         repositorio_usuarios = fabrica.criar_repositorio_usuarios()
         repositorio_produtos = fabrica.criar_repositorio_produtos()
+        repositorio_acessos = fabrica.criar_repositorio_registros_acesso()
         logger = LoggingLibAdapter()
-        self._gerenciador_usuarios = GerenciadorUsuarios(repositorio_usuarios, logger)
+        self._repositorio_usuarios = repositorio_usuarios
+        self._repositorio_acessos = repositorio_acessos
+        self._gerenciador_usuarios = GerenciadorUsuarios(
+            repositorio_usuarios, logger, repositorio_acessos
+        )
         self._gerenciador_produtos = GerenciadorProdutos(
             repositorio_produtos,
             repositorio_usuarios,
@@ -110,3 +119,14 @@ class FacadeSingletonController:
         return len(self._gerenciador_usuarios.listar_usuarios()) + (
             self._gerenciador_produtos.contar_produtos()
         )
+
+    def gerar_relatorio_acesso(self, formato: str = "html") -> bytes:
+        """Gera o relatório de estatísticas de acesso dos usuários no
+        formato pedido ('html' ou 'pdf')."""
+        classe_relatorio = (
+            RelatorioAcessoPDF
+            if formato.strip().lower() == FORMATO_RELATORIO_PDF
+            else RelatorioAcessoHTML
+        )
+        relatorio = classe_relatorio(self._repositorio_acessos, self._repositorio_usuarios)
+        return relatorio.gerar()

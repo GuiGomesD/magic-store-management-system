@@ -1,6 +1,12 @@
 import pytest
 
-from app.domain.excecoes import DadosInvalidosError, EmailDuplicadoError, LoginDuplicadoError
+from app.domain.excecoes import (
+    CredenciaisInvalidasError,
+    DadosInvalidosError,
+    EmailDuplicadoError,
+    LoginDuplicadoError,
+)
+from app.infra.repositories.registro_acesso_repository import RegistroAcessoRepository
 from app.infra.repositories.usuario_repository import UsuarioArquivoBinarioRepository, UsuarioRepository
 from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
 
@@ -121,3 +127,33 @@ def test_deve_persistir_usuarios_em_arquivo_binario(tmp_path) -> None:
     assert len(usuarios) == 1
     assert usuarios[0].nome == "Ana Silva"
     assert usuarios[0].login == "anasilva"
+
+
+def test_login_bem_sucedido_registra_acesso() -> None:
+    repositorio_acessos = RegistroAcessoRepository()
+    gerenciador = GerenciadorUsuarios(
+        UsuarioRepository(), repositorio_acessos=repositorio_acessos
+    )
+    usuario = gerenciador.adicionar_usuario(
+        "Ana Silva", "ana@email.com", "anasilva", "Senha123"
+    )
+
+    gerenciador.autenticar_usuario("anasilva", "Senha123")
+    gerenciador.autenticar_usuario("anasilva", "Senha123")
+
+    registros = repositorio_acessos.buscar_todos()
+    assert len(registros) == 2
+    assert all(registro.usuario_id == usuario.id for registro in registros)
+
+
+def test_login_com_falha_nao_registra_acesso() -> None:
+    repositorio_acessos = RegistroAcessoRepository()
+    gerenciador = GerenciadorUsuarios(
+        UsuarioRepository(), repositorio_acessos=repositorio_acessos
+    )
+    gerenciador.adicionar_usuario("Ana Silva", "ana@email.com", "anasilva", "Senha123")
+
+    with pytest.raises(CredenciaisInvalidasError):
+        gerenciador.autenticar_usuario("anasilva", "senha-errada")
+
+    assert repositorio_acessos.buscar_todos() == []
