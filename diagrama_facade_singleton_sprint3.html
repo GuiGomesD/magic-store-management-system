@@ -1,0 +1,160 @@
+<style>
+#cd svg .divider path { stroke-opacity: 0.5; }
+#cd { width: 100%; padding: 1rem 0; overflow-x: auto; }
+#cd svg { max-width: 100%; height: auto; }
+</style>
+<div id="cd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryBorderColor: dark ? '#AFA9EC' : '#534AB7',
+    primaryTextColor: dark ? '#CECBF6' : '#26215C',
+  },
+});
+const src = `classDiagram
+  direction TB
+  class FacadeSingletonController {
+    <<Singleton / Facade>>
+    -FacadeSingletonController instance$
+    -GerenteUsuario gerenteUsuario
+    -GerenteProduto gerenteProduto
+    -GerentePedido gerentePedido
+    -FacadeSingletonController()
+    +getInstance()$ FacadeSingletonController
+    +cadastrarProduto(dados) Produto
+    +buscarProduto(id) Produto
+    +listarProdutos() List~Produto~
+    +atualizarProduto(id, dados) boolean
+    +removerProduto(id) boolean
+    +cadastrarUsuario(dados) Usuario
+    +realizarPedido(cliente, itens) Pedido
+    +getQuantidadeEntidades() int
+  }
+  class GerenteProduto {
+    <<control>>
+    +cadastrar(dados) Produto
+    +buscarPorId(id) Produto
+    +listarTodos() List~Produto~
+    +atualizar(id, dados) boolean
+    +remover(id) boolean
+    +contar() int
+  }
+  class GerenteUsuario {
+    <<control>>
+    +cadastrar(dados) Usuario
+    +buscarPorId(id) Usuario
+    +listarTodos() List~Usuario~
+    +atualizar(id, dados) boolean
+    +remover(id) boolean
+    +contar() int
+  }
+  class GerentePedido {
+    <<control>>
+    +criar(cliente, itens) Pedido
+    +buscarPorId(id) Pedido
+    +listarTodos() List~Pedido~
+    +atualizarStatus(id, status) boolean
+    +remover(id) boolean
+    +contar() int
+  }
+  class RepositorioGenerico~T~ {
+    -List~T~ registros
+    +salvar(T)
+    +buscarPorId(id) T
+    +listarTodos() List~T~
+    +atualizar(id, T) boolean
+    +remover(id) boolean
+    +contar() int
+  }
+  class Usuario {
+    <<abstract>>
+    #int id
+    #String nome
+    #String email
+    #String senha
+  }
+  class Cliente {
+    +String endereco
+  }
+  class Administrador {
+    +String login
+  }
+  class Produto {
+    +int id
+    +String nome
+    +TipoProduto tipo
+    +double preco
+    +int estoque
+    +String edicao
+    +String raridade
+    +baixarEstoque(qtd) boolean
+  }
+  class TipoProduto {
+    <<enumeration>>
+    CARTA
+    BOOSTER
+    DECK
+    ACESSORIO
+  }
+  class Pedido {
+    +int id
+    +Date data
+    +String status
+    +getValorTotal() double
+  }
+  class ItemPedido {
+    +int quantidade
+    +double precoUnitario
+    +getSubtotal() double
+  }
+  FacadeSingletonController --> FacadeSingletonController : instance
+  FacadeSingletonController --> GerenteUsuario
+  FacadeSingletonController --> GerenteProduto
+  FacadeSingletonController --> GerentePedido
+  GerenteUsuario --> RepositorioGenerico : usa
+  GerenteProduto --> RepositorioGenerico : usa
+  GerentePedido --> RepositorioGenerico : usa
+  GerenteUsuario --> Usuario : gerencia
+  GerenteProduto --> Produto : gerencia
+  GerentePedido --> Pedido : gerencia
+  Usuario <|-- Cliente
+  Usuario <|-- Administrador
+  Cliente "1" --> "*" Pedido : faz
+  Pedido "1" *-- "1..*" ItemPedido : contem
+  ItemPedido "*" --> "1" Produto : refere
+  Produto --> TipoProduto`;
+const { svg } = await mermaid.render('cd-svg', src);
+document.getElementById('cd').innerHTML = svg;
+
+document.querySelectorAll('#cd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [], ys = [];
+  for (let i = 0; i < nums.length - 1; i += 2) { xs.push(nums[i]); ys.push(nums[i+1]); }
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+</script>

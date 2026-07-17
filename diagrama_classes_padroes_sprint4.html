@@ -1,0 +1,279 @@
+<style>
+#cd svg .divider path { stroke-opacity: 0.5; }
+#cd { width: 100%; padding: 1rem 0; overflow-x: auto; }
+#cd svg { max-width: 100%; height: auto; }
+</style>
+<div id="cd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: 'Arial, sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '12px',
+    fontFamily: 'Arial, sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryBorderColor: dark ? '#AFA9EC' : '#534AB7',
+    primaryTextColor: dark ? '#CECBF6' : '#26215C',
+  },
+});
+const src = `classDiagram
+  direction LR
+
+  namespace Domain {
+    class Usuario {
+      <<entity>>
+      +int id
+      +String nome
+      +String email
+      +String login
+      +String senha
+      +String perfil
+    }
+    class Produto {
+      <<entity>>
+      +int id
+      +String nome
+      +String tipo
+      +double preco
+      +int quantidadeEstoque
+      +int gerenteId
+    }
+    class RegistroAcesso {
+      <<entity>>
+      +int id
+      +int usuarioId
+      +String login
+      +DateTime momento
+    }
+  }
+
+  namespace Business_Interfaces {
+    class UsuarioRepositoryInterface {
+      <<interface>>
+      +salvar(usuario)
+      +buscarTodos()
+      +buscarPorId(id)
+      +buscarPorLogin(login)
+      +existeEmail(email)
+      +existeLogin(login)
+      +gerarProximoId()
+    }
+    class ProdutoRepositoryInterface {
+      <<interface>>
+      +salvar(produto)
+      +buscarTodos()
+      +buscarPorId(id)
+      +remover(id)
+      +contar()
+      +gerarProximoId()
+    }
+    class RegistroAcessoRepositoryInterface {
+      <<interface>>
+      +salvar(registro)
+      +buscarTodos()
+      +gerarProximoId()
+    }
+    class LoggerInterface {
+      <<interface>>
+      +info(mensagem)
+      +erro(mensagem)
+    }
+    class LoggerNulo {
+      <<Null Object>>
+    }
+    class RegistroAcessoRepositoryNulo {
+      <<Null Object>>
+    }
+  }
+
+  namespace Business_Servicos {
+    class FacadeSingletonController {
+      <<Singleton / Facade>>
+      -FacadeSingletonController instancia$
+      -GerenciadorUsuarios gerenciadorUsuarios
+      -GerenciadorProdutos gerenciadorProdutos
+      -FacadeSingletonController()
+      +obterInstancia()$ FacadeSingletonController
+      +cadastrarUsuario(dados) Usuario
+      +cadastrarGerente(dados) Usuario
+      +autenticarUsuario(login, senha) Usuario
+      +cadastrarProduto(dados) Produto
+      +atualizarProduto(id, dados) Produto
+      +removerProduto(id)
+      +gerarRelatorioAcesso(formato) bytes
+    }
+    class GerenciadorUsuarios {
+      <<control>>
+      -UsuarioRepositoryInterface repositorio
+      -LoggerInterface logger
+      -RegistroAcessoRepositoryInterface repositorioAcessos
+      +adicionarUsuario(dados) Usuario
+      +autenticarUsuario(login, senha) Usuario
+      +listarUsuarios()
+    }
+    class GerenciadorProdutos {
+      <<control>>
+      -ProdutoRepositoryInterface repositorio
+      -UsuarioRepositoryInterface repositorioUsuarios
+      -LoggerInterface logger
+      +adicionarProduto(dados) Produto
+      +atualizarProduto(id, dados) Produto
+      +removerProduto(id)
+      +contarProdutos() int
+    }
+  }
+
+  namespace Business_Relatorios {
+    class RelatorioAcessoUsuarios {
+      <<abstract / Template Method>>
+      #RegistroAcessoRepositoryInterface repositorioAcessos
+      #UsuarioRepositoryInterface repositorioUsuarios
+      +gerar() bytes
+      #coletarEstatisticas() List~EstatisticaAcessoUsuario~
+      #montarCabecalho(estatisticas)*
+      #montarCorpo(estatisticas)*
+      #montarRodape(estatisticas)*
+      #finalizar(cabecalho, corpo, rodape)* bytes
+    }
+    class RelatorioAcessoHTML {
+      +montarCabecalho(estatisticas)
+      +montarCorpo(estatisticas)
+      +montarRodape(estatisticas)
+      +finalizar(cabecalho, corpo, rodape) bytes
+    }
+    class RelatorioAcessoPDF {
+      +montarCabecalho(estatisticas)
+      +montarCorpo(estatisticas)
+      +montarRodape(estatisticas)
+      +finalizar(cabecalho, corpo, rodape) bytes
+    }
+    class EstatisticaAcessoUsuario {
+      <<value object>>
+      +int usuarioId
+      +String nome
+      +String login
+      +int totalAcessos
+      +DateTime ultimoAcesso
+    }
+  }
+
+  namespace Infra_Repositories {
+    class RepositoryFactory {
+      <<abstract / Abstract Factory>>
+      +criarRepositorioUsuarios()* UsuarioRepositoryInterface
+      +criarRepositorioProdutos()* ProdutoRepositoryInterface
+      +criarRepositorioRegistrosAcesso()* RegistroAcessoRepositoryInterface
+      +obterFabrica(tipo)$ RepositoryFactory
+    }
+    class MemoriaRepositoryFactory {
+      <<Factory Method>>
+    }
+    class ArquivoBinarioRepositoryFactory {
+      <<Factory Method>>
+    }
+    class UsuarioRepository {
+      -Map usuarios
+    }
+    class UsuarioArquivoBinarioRepository {
+      -String caminhoArquivo
+      +carregarDoArquivo()
+      +salvarNoArquivo()
+    }
+    class ProdutoRepository {
+      -Map produtos
+    }
+    class ProdutoArquivoBinarioRepository {
+      -String caminhoArquivo
+      +carregarDoArquivo()
+      +salvarNoArquivo()
+    }
+    class RegistroAcessoRepository {
+      -Map registros
+    }
+  }
+
+  namespace Infra_Logging {
+    class LoggingLibAdapter {
+      <<Adapter>>
+      -Logger logger
+      +info(mensagem)
+      +erro(mensagem)
+    }
+  }
+
+  %% ---- Facade orquestra os controles ----
+  FacadeSingletonController --> FacadeSingletonController : instancia
+  FacadeSingletonController --> GerenciadorUsuarios
+  FacadeSingletonController --> GerenciadorProdutos
+  FacadeSingletonController --> RepositoryFactory : usa (na inicializacao)
+  FacadeSingletonController --> RelatorioAcessoHTML : cria
+  FacadeSingletonController --> RelatorioAcessoPDF : cria
+
+  %% ---- Business so depende de interfaces (nunca de infra concreto) ----
+  GerenciadorUsuarios --> UsuarioRepositoryInterface : usa
+  GerenciadorUsuarios --> LoggerInterface : usa
+  GerenciadorUsuarios --> RegistroAcessoRepositoryInterface : usa
+  GerenciadorUsuarios --> Usuario : gerencia
+  GerenciadorUsuarios ..> RegistroAcesso : cria no login
+
+  GerenciadorProdutos --> ProdutoRepositoryInterface : usa
+  GerenciadorProdutos --> UsuarioRepositoryInterface : usa
+  GerenciadorProdutos --> LoggerInterface : usa
+  GerenciadorProdutos --> Produto : gerencia
+
+  LoggerInterface <|.. LoggerNulo
+  RegistroAcessoRepositoryInterface <|.. RegistroAcessoRepositoryNulo
+
+  %% ---- Repository Pattern: interface (business) x implementacao (infra) ----
+  UsuarioRepositoryInterface <|.. UsuarioRepository : implementa
+  UsuarioRepository <|-- UsuarioArquivoBinarioRepository
+  ProdutoRepositoryInterface <|.. ProdutoRepository : implementa
+  ProdutoRepository <|-- ProdutoArquivoBinarioRepository
+  RegistroAcessoRepositoryInterface <|.. RegistroAcessoRepository : implementa
+
+  %% ---- Adapter: LoggerInterface x lib logging ----
+  LoggerInterface <|.. LoggingLibAdapter : implementa
+
+  %% ---- Abstract Factory / Factory Method ----
+  RepositoryFactory <|-- MemoriaRepositoryFactory
+  RepositoryFactory <|-- ArquivoBinarioRepositoryFactory
+  RepositoryFactory ..> UsuarioRepositoryInterface : cria
+  RepositoryFactory ..> ProdutoRepositoryInterface : cria
+  RepositoryFactory ..> RegistroAcessoRepositoryInterface : cria
+
+  %% ---- Template Method: relatorio de estatisticas de acesso ----
+  RelatorioAcessoUsuarios <|-- RelatorioAcessoHTML
+  RelatorioAcessoUsuarios <|-- RelatorioAcessoPDF
+  RelatorioAcessoUsuarios --> RegistroAcessoRepositoryInterface : le
+  RelatorioAcessoUsuarios --> UsuarioRepositoryInterface : le
+  RelatorioAcessoUsuarios ..> EstatisticaAcessoUsuario : gera`;
+const { svg } = await mermaid.render('cd-svg', src);
+document.getElementById('cd').innerHTML = svg;
+
+document.querySelectorAll('#cd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [], ys = [];
+  for (let i = 0; i < nums.length - 1; i += 2) { xs.push(nums[i]); ys.push(nums[i+1]); }
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+</script>
