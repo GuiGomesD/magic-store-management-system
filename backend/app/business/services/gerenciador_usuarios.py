@@ -5,7 +5,7 @@ from app.domain.excecoes import (
     LoginDuplicadoError,
 )
 from app.domain.usuario import PERFIL_CLIENTE, PERFIS_PERMITIDOS, Usuario
-from app.repository.usuario_repository import UsuarioRepository
+from backend.app.infra.repositories.usuario_repository import UsuarioRepository
 
 CARACTERES_ESPECIAIS_AWS = set("!@#$%^&*()_+-=[]{}|'")
 TAMANHO_MINIMO_SENHA_AWS = 8

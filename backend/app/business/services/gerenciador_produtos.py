@@ -5,8 +5,8 @@ from app.domain.excecoes import (
 )
 from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_GERENTE
-from app.repository.produto_repository import ProdutoRepository
-from app.repository.usuario_repository import UsuarioRepository
+from backend.app.infra.repositories.produto_repository import ProdutoRepository
+from backend.app.infra.repositories.usuario_repository import UsuarioRepository
 
 TIPOS_PERMITIDOS = frozenset({"carta", "booster", "deck", "acessorio"})
 
