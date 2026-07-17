@@ -1,31 +1,10 @@
 from __future__ import annotations
 
-import os
-
 from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_CLIENTE, PERFIL_GERENTE, Usuario
-from app.infra.repositories.produto_repository import (
-    ProdutoArquivoBinarioRepository,
-    ProdutoRepository,
-)
-from app.infra.repositories.usuario_repository import (
-    UsuarioArquivoBinarioRepository,
-    UsuarioRepository,
-)
+from app.infra.repositories.repository_factory import RepositoryFactory
 from app.business.services.gerenciador_produtos import GerenciadorProdutos
 from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
-
-
-def _criar_repositorio_usuarios() -> UsuarioRepository:
-    if os.getenv("WIZARDRY_PERSISTENCIA", "memoria").lower() == "arquivo":
-        return UsuarioArquivoBinarioRepository()
-    return UsuarioRepository()
-
-
-def _criar_repositorio_produtos() -> ProdutoRepository:
-    if os.getenv("WIZARDRY_PERSISTENCIA", "memoria").lower() == "arquivo":
-        return ProdutoArquivoBinarioRepository()
-    return ProdutoRepository()
 
 
 class FacadeSingletonController:
@@ -47,8 +26,9 @@ class FacadeSingletonController:
         return cls._instancia
 
     def _inicializar(self) -> None:
-        repositorio_usuarios = _criar_repositorio_usuarios()
-        repositorio_produtos = _criar_repositorio_produtos()
+        fabrica = RepositoryFactory.obter_fabrica()
+        repositorio_usuarios = fabrica.criar_repositorio_usuarios()
+        repositorio_produtos = fabrica.criar_repositorio_produtos()
         self._gerenciador_usuarios = GerenciadorUsuarios(repositorio_usuarios)
         self._gerenciador_produtos = GerenciadorProdutos(
             repositorio_produtos,
