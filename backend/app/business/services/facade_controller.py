@@ -4,16 +4,16 @@ import os
 
 from app.domain.produto import Produto
 from app.domain.usuario import PERFIL_CLIENTE, PERFIL_GERENTE, Usuario
-from backend.app.infra.repositories.produto_repository import (
+from app.infra.repositories.produto_repository import (
     ProdutoArquivoBinarioRepository,
     ProdutoRepository,
 )
-from backend.app.infra.repositories.usuario_repository import (
+from app.infra.repositories.usuario_repository import (
     UsuarioArquivoBinarioRepository,
     UsuarioRepository,
 )
-from backend.app.business.service.gerenciador_produtos import GerenciadorProdutos
-from backend.app.business.service.gerenciador_usuarios import GerenciadorUsuarios
+from app.business.services.gerenciador_produtos import GerenciadorProdutos
+from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
 
 
 def _criar_repositorio_usuarios() -> UsuarioRepository:

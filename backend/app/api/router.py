@@ -9,7 +9,7 @@ from app.domain.excecoes import (
     PersistenciaError,
 )
 from app.domain.usuario import Usuario
-from app.service.facade_controller import FacadeSingletonController
+from app.business.services.facade_controller import FacadeSingletonController
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 

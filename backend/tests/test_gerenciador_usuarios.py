@@ -1,8 +1,8 @@
 import pytest
 
 from app.domain.excecoes import DadosInvalidosError, EmailDuplicadoError, LoginDuplicadoError
-from app.repository.usuario_repository import UsuarioArquivoBinarioRepository, UsuarioRepository
-from app.service.gerenciador_usuarios import GerenciadorUsuarios
+from app.infra.repositories.usuario_repository import UsuarioArquivoBinarioRepository, UsuarioRepository
+from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
 
 
 @pytest.fixture

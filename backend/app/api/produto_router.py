@@ -14,7 +14,7 @@ from app.domain.excecoes import (
     UsuarioNaoEncontradoError,
 )
 from app.domain.produto import Produto
-from app.service.facade_controller import FacadeSingletonController
+from app.business.services.facade_controller import FacadeSingletonController
 
 router = APIRouter(prefix="/produtos", tags=["produtos"])
 

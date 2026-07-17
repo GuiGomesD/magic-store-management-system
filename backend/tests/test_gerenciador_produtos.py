@@ -5,14 +5,14 @@ from app.domain.excecoes import (
     ProdutoNaoEncontradoError,
     UsuarioNaoEncontradoError,
 )
-from backend.app.infra.repositories.produto_repository import (
+from app.infra.repositories.produto_repository import (
     ProdutoArquivoBinarioRepository,
     ProdutoRepository,
 )
 from app.domain.usuario import PERFIL_GERENTE
-from backend.app.infra.repositories.usuario_repository import UsuarioRepository
-from backend.app.business.services.gerenciador_produtos import GerenciadorProdutos
-from backend.app.business.services.gerenciador_usuarios import GerenciadorUsuarios
+from app.infra.repositories.usuario_repository import UsuarioRepository
+from app.business.services.gerenciador_produtos import GerenciadorProdutos
+from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
 
 
 @pytest.fixture

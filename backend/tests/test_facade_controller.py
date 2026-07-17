@@ -1,6 +1,6 @@
 import pytest
 
-from app.service.facade_controller import FacadeSingletonController
+from app.business.services.facade_controller import FacadeSingletonController
 
 
 @pytest.fixture
