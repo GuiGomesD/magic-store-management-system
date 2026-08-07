@@ -17,6 +17,7 @@ from app.business.interfaces.usuario_repository_interface import (
 )
 
 from app.business.strategy.atualizacao_completa_strategy import AtualizacaoCompletaStrategy
+from app.business.observers.produto_observer import ProdutoObserver
 
 TIPOS_PERMITIDOS = frozenset({"carta", "booster", "deck", "acessorio"})
 
@@ -41,7 +42,11 @@ class GerenciadorProdutos:
         self._logger = logger or LoggerNulo()
         self._mementos_atualizacao: dict[int, ProdutoMemento] = {}
         self._update_strategy = AtualizacaoCompletaStrategy()
+        self._observers: list[ProdutoObserver] = []
 
+    def adicionar_observer(self, observer: ProdutoObserver) -> None:
+        self._observers.append(observer)
+    
     def adicionar_produto(
         self,
         nome: str,
@@ -68,7 +73,7 @@ class GerenciadorProdutos:
             gerente_id=gerente_id,
         )
         produto_salvo = self._repositorio.salvar(produto)
-        self._logger.info(f"Produto '{nome_tratado}' cadastrado pelo gerente {gerente_id}")
+        self._notificar_produto_cadastrado(produto_salvo)
         return produto_salvo
 
     def listar_produtos(self) -> list[Produto]:
@@ -108,7 +113,7 @@ class GerenciadorProdutos:
             quantidade_estoque,
         )
         produto_atualizado = self._repositorio.salvar(produto)
-        self._logger.info(f"Produto {id} atualizado")
+        self._notificar_produto_atualizado(produto_atualizado)
         return produto_atualizado
 
     def desfazer_atualizacao_produto(self, id: int) -> Produto:
@@ -123,7 +128,7 @@ class GerenciadorProdutos:
         produto_restaurado = memento.restaurar()
         produto_salvo = self._repositorio.salvar(produto_restaurado)
         del self._mementos_atualizacao[id]
-        self._logger.info(f"Última atualização do produto {id} desfeita")
+        self._notificar_produto_restaurado(produto_salvo)
         return produto_salvo
 
     def remover_produto(self, id: int) -> None:
@@ -131,7 +136,7 @@ class GerenciadorProdutos:
             self._logger.erro(f"Tentativa de remover produto inexistente: {id}")
             raise ProdutoNaoEncontradoError("Produto não encontrado")
         self._mementos_atualizacao.pop(id, None)
-        self._logger.info(f"Produto {id} removido")
+        self._notificar_produto_removido(id)
 
     def contar_produtos(self) -> int:
         return self._repositorio.contar()
@@ -164,3 +169,22 @@ class GerenciadorProdutos:
             raise DadosInvalidosError(
                 "Somente usuários com perfil de gerente podem cadastrar produtos"
             )
+
+    def _notificar_produto_cadastrado(self, produto: Produto) -> None:
+        for observer in self._observers:
+            observer.produto_cadastrado(produto)
+
+
+    def _notificar_produto_atualizado(self, produto: Produto) -> None:
+        for observer in self._observers:
+            observer.produto_atualizado(produto)
+
+
+    def _notificar_produto_restaurado(self, produto: Produto) -> None:
+        for observer in self._observers:
+            observer.produto_restaurado(produto)
+
+
+    def _notificar_produto_removido(self, produto_id: int) -> None:
+        for observer in self._observers:
+            observer.produto_removido(produto_id)

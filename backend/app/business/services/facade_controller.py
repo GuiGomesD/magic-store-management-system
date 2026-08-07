@@ -16,6 +16,8 @@ from app.business.commands.desfazer_atualizacao_produto_command import (
     DesfazerAtualizacaoProdutoCommand,
 )
 
+from app.business.observers.logger_observer import LoggerObserver
+
 FORMATO_RELATORIO_PDF = "pdf"
 
 
@@ -53,6 +55,10 @@ class FacadeSingletonController:
             repositorio_usuarios,
             logger,
         )
+
+        logger_observer = LoggerObserver(logger)
+
+        self._gerenciador_produtos.adicionar_observer(logger_observer)
 
     @classmethod
     def obter_instancia(cls) -> FacadeSingletonController:
