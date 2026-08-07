@@ -16,6 +16,8 @@ from app.business.interfaces.usuario_repository_interface import (
     UsuarioRepositoryInterface,
 )
 
+from app.business.strategy.atualizacao_completa_strategy import AtualizacaoCompletaStrategy
+
 TIPOS_PERMITIDOS = frozenset({"carta", "booster", "deck", "acessorio"})
 
 
@@ -38,6 +40,7 @@ class GerenciadorProdutos:
         self._repositorio_usuarios = repositorio_usuarios
         self._logger = logger or LoggerNulo()
         self._mementos_atualizacao: dict[int, ProdutoMemento] = {}
+        self._update_strategy = AtualizacaoCompletaStrategy()
 
     def adicionar_produto(
         self,
@@ -97,10 +100,13 @@ class GerenciadorProdutos:
 
         self._mementos_atualizacao[id] = ProdutoMemento.criar(produto)
 
-        produto.nome = nome_tratado
-        produto.tipo = tipo_tratado
-        produto.preco = preco
-        produto.quantidade_estoque = quantidade_estoque
+        self._update_strategy.atualizar(
+            produto,
+            nome_tratado,
+            tipo_tratado,
+            preco,
+            quantidade_estoque,
+        )
         produto_atualizado = self._repositorio.salvar(produto)
         self._logger.info(f"Produto {id} atualizado")
         return produto_atualizado
