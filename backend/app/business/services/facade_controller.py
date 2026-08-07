@@ -130,3 +130,6 @@ class FacadeSingletonController:
         )
         relatorio = classe_relatorio(self._repositorio_acessos, self._repositorio_usuarios)
         return relatorio.gerar()
+
+    def desfazer_atualizacao_produto(self, produto_id: int):
+        return self._gerenciador_produtos.desfazer_atualizacao_produto(produto_id)

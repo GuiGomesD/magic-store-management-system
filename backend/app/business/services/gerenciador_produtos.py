@@ -1,5 +1,6 @@
 from app.domain.excecoes import (
     DadosInvalidosError,
+    NadaParaDesfazerError,
     ProdutoNaoEncontradoError,
     UsuarioNaoEncontradoError,
 )
@@ -9,6 +10,7 @@ from app.business.interfaces.logger_interface import LoggerInterface, LoggerNulo
 from app.business.interfaces.produto_repository_interface import (
     ProdutoRepositoryInterface,
 )
+from app.business.mementos.produto_memento import ProdutoMemento
 
 from app.business.interfaces.usuario_repository_interface import (
     UsuarioRepositoryInterface,
@@ -18,7 +20,13 @@ TIPOS_PERMITIDOS = frozenset({"carta", "booster", "deck", "acessorio"})
 
 
 class GerenciadorProdutos:
-    """Camada de controle do CRUD de Produto (usado pelo Gerente)."""
+    """Camada de controle do CRUD de Produto (usado pelo Gerente).
+
+    Também atua como Caretaker do padrão Memento: antes de aplicar uma
+    atualização, guarda uma "fotografia" (`ProdutoMemento`) do estado
+    anterior do produto, permitindo desfazer somente a última
+    atualização realizada em cada produto.
+    """
 
     def __init__(
         self,
@@ -29,6 +37,7 @@ class GerenciadorProdutos:
         self._repositorio = repositorio
         self._repositorio_usuarios = repositorio_usuarios
         self._logger = logger or LoggerNulo()
+        self._mementos_atualizacao: dict[int, ProdutoMemento] = {}
 
     def adicionar_produto(
         self,
@@ -86,6 +95,8 @@ class GerenciadorProdutos:
         self._validar_preco(preco)
         self._validar_estoque(quantidade_estoque)
 
+        self._mementos_atualizacao[id] = ProdutoMemento.criar(produto)
+
         produto.nome = nome_tratado
         produto.tipo = tipo_tratado
         produto.preco = preco
@@ -94,10 +105,26 @@ class GerenciadorProdutos:
         self._logger.info(f"Produto {id} atualizado")
         return produto_atualizado
 
+    def desfazer_atualizacao_produto(self, id: int) -> Produto:
+        memento = self._mementos_atualizacao.get(id)
+        if memento is None:
+            if self._repositorio.buscar_por_id(id) is None:
+                raise ProdutoNaoEncontradoError("Produto não encontrado")
+            raise NadaParaDesfazerError(
+                "Não há atualização anterior para desfazer neste produto"
+            )
+
+        produto_restaurado = memento.restaurar()
+        produto_salvo = self._repositorio.salvar(produto_restaurado)
+        del self._mementos_atualizacao[id]
+        self._logger.info(f"Última atualização do produto {id} desfeita")
+        return produto_salvo
+
     def remover_produto(self, id: int) -> None:
         if not self._repositorio.remover(id):
             self._logger.erro(f"Tentativa de remover produto inexistente: {id}")
             raise ProdutoNaoEncontradoError("Produto não encontrado")
+        self._mementos_atualizacao.pop(id, None)
         self._logger.info(f"Produto {id} removido")
 
     def contar_produtos(self) -> int:

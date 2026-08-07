@@ -24,3 +24,7 @@ class CredenciaisInvalidasError(Exception):
 
 class PersistenciaError(Exception):
     pass
+
+
+class NadaParaDesfazerError(Exception):
+    pass

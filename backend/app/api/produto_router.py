@@ -109,6 +109,27 @@ def atualizar_produto(
 
     return converter_para_resposta(produto)
 
+@router.post("/{produto_id}/desfazer")
+def desfazer_atualizacao(
+    produto_id: int,
+    facade: FacadeSingletonController = Depends(obter_facade),
+):
+    try:
+        facade.desfazer_atualizacao_produto(produto_id)
+        return {"message": "Atualização desfeita com sucesso"}
+
+    except ProdutoNaoEncontradoError as erro:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            detail=str(erro),
+        ) from erro
+
+    except PersistenciaError as erro:
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(erro),
+        ) from erro
+
 
 @router.delete("/{produto_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remover_produto(

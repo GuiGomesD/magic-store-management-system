@@ -144,6 +144,50 @@ export async function removerProduto(id: number): Promise<void> {
   }
 }
 
+export async function atualizarProduto(
+  id: number,
+  dados: {
+    nome: string;
+    tipo: string;
+    preco: number;
+    quantidade_estoque: number;
+  },
+): Promise<Produto> {
+  const resposta = await fetch(`${URL_BASE_API}/produtos/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(dados),
+  });
+
+  if (!resposta.ok) {
+    throw new Error(
+      await obterMensagemErro(
+        resposta,
+        "Não foi possível atualizar o produto",
+      ),
+    );
+  }
+
+  return resposta.json();
+}
+
+export async function desfazerAtualizacaoProduto(id: number): Promise<void> {
+  const resposta = await fetch(`${URL_BASE_API}/produtos/${id}/desfazer`, {
+    method: "POST",
+  });
+
+  if (!resposta.ok) {
+    throw new Error(
+      await obterMensagemErro(
+        resposta,
+        "Não foi possível desfazer a atualização do produto",
+      ),
+    );
+  }
+}
+
 export async function contarEntidades(): Promise<number> {
   const resposta = await fetch(`${URL_BASE_API}/produtos/quantidade`);
 

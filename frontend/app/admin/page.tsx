@@ -9,6 +9,8 @@ import {
   listarProdutos,
   listarUsuarios,
   removerProduto,
+  atualizarProduto,
+  desfazerAtualizacaoProduto,
   type Produto,
   type Usuario,
 } from "@/lib/api";
@@ -34,6 +36,7 @@ export default function PaginaPainelAdmin() {
   const [precoProduto, setPrecoProduto] = useState("");
   const [estoqueProduto, setEstoqueProduto] = useState("");
   const [gerenteId, setGerenteId] = useState("");
+  const [produtoEditando, setProdutoEditando] = useState<number | null>(null);
 
   const carregarDados = useCallback(async () => {
     setMensagemErro(null);
@@ -46,6 +49,16 @@ export default function PaginaPainelAdmin() {
       setGerentes(usuarios.filter((usuario) => usuario.perfil === "gerente"));
       setProdutos(listaProdutos);
       setQuantidadeEntidades(quantidade);
+      setProdutoEditando((idAtual) => {
+        if (
+          idAtual !== null &&
+          !listaProdutos.some((produto) => produto.id === idAtual)
+        ) {
+          limparFormularioProduto();
+          return null;
+        }
+        return idAtual;
+      });
     } catch (erro) {
       setMensagemErro(
         erro instanceof Error ? erro.message : "Erro ao carregar dados",
@@ -56,6 +69,14 @@ export default function PaginaPainelAdmin() {
   useEffect(() => {
     void carregarDados();
   }, [carregarDados]);
+
+  function limparFormularioProduto() {
+    setNomeProduto("");
+    setTipoProduto(TIPOS_PRODUTO[0]);
+    setPrecoProduto("");
+    setEstoqueProduto("");
+    setGerenteId("");
+  }
 
   async function handleCadastrarGerente(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -83,17 +104,30 @@ export default function PaginaPainelAdmin() {
     setMensagemSucesso(null);
 
     try {
-      await criarProduto({
-        nome: nomeProduto,
-        tipo: tipoProduto,
-        preco: Number(precoProduto),
-        quantidade_estoque: Number(estoqueProduto),
-        gerente_id: Number(gerenteId),
-      });
-      setNomeProduto("");
-      setPrecoProduto("");
-      setEstoqueProduto("");
-      setMensagemSucesso("Produto cadastrado com sucesso.");
+      if (produtoEditando !== null) {
+        await atualizarProduto(produtoEditando, {
+          nome: nomeProduto,
+          tipo: tipoProduto,
+          preco: Number(precoProduto),
+          quantidade_estoque: Number(estoqueProduto),
+        });
+
+        setMensagemSucesso("Produto atualizado com sucesso.");
+      } else {
+        await criarProduto({
+          nome: nomeProduto,
+          tipo: tipoProduto,
+          preco: Number(precoProduto),
+          quantidade_estoque: Number(estoqueProduto),
+          gerente_id: Number(gerenteId),
+        });
+
+        setMensagemSucesso("Produto cadastrado com sucesso.");
+      }
+
+      setProdutoEditando(null);
+      limparFormularioProduto();
+
       await carregarDados();
     } catch (erro) {
       setMensagemErro(
@@ -109,10 +143,70 @@ export default function PaginaPainelAdmin() {
     try {
       await removerProduto(id);
       setMensagemSucesso("Produto removido com sucesso.");
+
+      // Se o produto removido era o que estava sendo editado, sai do
+      // modo de edição imediatamente (não espera o carregarDados).
+      if (produtoEditando === id) {
+        setProdutoEditando(null);
+        limparFormularioProduto();
+      }
+
       await carregarDados();
     } catch (erro) {
       setMensagemErro(
         erro instanceof Error ? erro.message : "Erro ao remover produto",
+      );
+    }
+  }
+
+  function handleEditarProduto(produto: Produto) {
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+
+    setProdutoEditando(produto.id);
+
+    setNomeProduto(produto.nome);
+    setTipoProduto(produto.tipo);
+    setPrecoProduto(produto.preco.toString());
+    setEstoqueProduto(produto.quantidade_estoque.toString());
+    setGerenteId(produto.gerente_id.toString());
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  function handleCancelarEdicao() {
+    setProdutoEditando(null);
+    limparFormularioProduto();
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+  }
+
+  async function handleDesfazerAtualizacao(id: number) {
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+
+    try {
+      await desfazerAtualizacaoProduto(id);
+      setMensagemSucesso("Última atualização desfeita com sucesso.");
+
+      // Se o produto que sofreu "desfazer" é o mesmo que está aberto no
+      // formulário de edição, os campos locais ficaram desatualizados
+      // em relação ao que voltou no servidor. Sai do modo de edição
+      // para evitar sobrescrever o desfazer com dados velhos ao salvar.
+      if (produtoEditando === id) {
+        setProdutoEditando(null);
+        limparFormularioProduto();
+      }
+
+      await carregarDados();
+    } catch (erro) {
+      setMensagemErro(
+        erro instanceof Error
+          ? erro.message
+          : "Erro ao desfazer atualização",
       );
     }
   }
@@ -193,7 +287,6 @@ export default function PaginaPainelAdmin() {
         </section>
 
         <section className="card">
-          <h2 style={{ marginTop: 0 }}>Cadastrar produto</h2>
           {gerentes.length === 0 ? (
             <p style={{ color: "#b00020" }}>
               Cadastre um gerente antes de adicionar produtos.
@@ -258,6 +351,7 @@ export default function PaginaPainelAdmin() {
                   value={gerenteId}
                   onChange={(evento) => setGerenteId(evento.target.value)}
                   required
+                  disabled={produtoEditando !== null}
                 >
                   <option value="">Selecione um gerente</option>
                   {gerentes.map((gerente) => (
@@ -266,8 +360,28 @@ export default function PaginaPainelAdmin() {
                     </option>
                   ))}
                 </select>
+                {produtoEditando !== null && (
+                  <small>
+                    O gerente responsável não é alterado durante a edição.
+                  </small>
+                )}
               </label>
-              <button type="submit">Cadastrar produto</button>
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button type="submit">
+                  {produtoEditando !== null
+                    ? "Salvar alterações"
+                    : "Cadastrar produto"}
+                </button>
+                {produtoEditando !== null && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={handleCancelarEdicao}
+                  >
+                    Cancelar edição
+                  </button>
+                )}
+              </div>
             </form>
           )}
         </section>
@@ -283,7 +397,7 @@ export default function PaginaPainelAdmin() {
                   {["ID", "Nome", "Tipo", "Preço", "Estoque", "Gerente", ""].map(
                     (coluna) => (
                       <th
-                        key={coluna}
+                        key={coluna || "acoes"}
                         style={{
                           textAlign: "left",
                           borderBottom: "1px solid #ccc",
@@ -297,7 +411,14 @@ export default function PaginaPainelAdmin() {
               </thead>
               <tbody>
                 {produtos.map((produto) => (
-                  <tr key={produto.id}>
+                  <tr
+                    key={produto.id}
+                    style={
+                      produtoEditando === produto.id
+                        ? { background: "#f4f2ff" }
+                        : undefined
+                    }
+                  >
                     <td style={{ padding: "0.5rem 0" }}>{produto.id}</td>
                     <td style={{ padding: "0.5rem 0" }}>{produto.nome}</td>
                     <td style={{ padding: "0.5rem 0" }}>{produto.tipo}</td>
@@ -309,6 +430,24 @@ export default function PaginaPainelAdmin() {
                     </td>
                     <td style={{ padding: "0.5rem 0" }}>#{produto.gerente_id}</td>
                     <td style={{ padding: "0.5rem 0", textAlign: "right" }}>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ padding: "0.35rem 0.7rem", marginRight: "0.5rem" }}
+                        onClick={() => handleEditarProduto(produto)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ padding: "0.35rem 0.7rem", marginRight: "0.5rem" }}
+                        onClick={() => handleDesfazerAtualizacao(produto.id)}
+                      >
+                        Desfazer
+                      </button>
+
                       <button
                         type="button"
                         className="secondary-button"
