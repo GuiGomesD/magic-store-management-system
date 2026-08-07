@@ -9,6 +9,13 @@ from app.business.relatorios.relatorio_acesso_pdf import RelatorioAcessoPDF
 from app.business.services.gerenciador_produtos import GerenciadorProdutos
 from app.business.services.gerenciador_usuarios import GerenciadorUsuarios
 
+from app.business.commands.cadastrar_produto_command import CadastrarProdutoCommand
+from app.business.commands.atualizar_produto_command import AtualizarProdutoCommand
+from app.business.commands.remover_produto_command import RemoverProdutoCommand
+from app.business.commands.desfazer_atualizacao_produto_command import (
+    DesfazerAtualizacaoProdutoCommand,
+)
+
 FORMATO_RELATORIO_PDF = "pdf"
 
 
@@ -86,9 +93,16 @@ class FacadeSingletonController:
         quantidade_estoque: int,
         gerente_id: int,
     ) -> Produto:
-        return self._gerenciador_produtos.adicionar_produto(
-            nome, tipo, preco, quantidade_estoque, gerente_id
+        command = CadastrarProdutoCommand(
+            self._gerenciador_produtos,
+            nome,
+            tipo,
+            preco,
+            quantidade_estoque,
+            gerente_id,
         )
+
+        return command.execute()
 
     def listar_produtos(self) -> list[Produto]:
         return self._gerenciador_produtos.listar_produtos()
@@ -104,12 +118,24 @@ class FacadeSingletonController:
         preco: float,
         quantidade_estoque: int,
     ) -> Produto:
-        return self._gerenciador_produtos.atualizar_produto(
-            id, nome, tipo, preco, quantidade_estoque
+        command = AtualizarProdutoCommand(
+            self._gerenciador_produtos,
+            id,
+            nome,
+            tipo,
+            preco,
+            quantidade_estoque,
         )
 
+        return command.execute()
+
     def remover_produto(self, id: int) -> None:
-        self._gerenciador_produtos.remover_produto(id)
+        command = RemoverProdutoCommand(
+        self._gerenciador_produtos,
+        id,
+        )
+
+        command.execute()
 
     # ------------------------------------------------------------------
     # Estatísticas do sistema
@@ -132,4 +158,9 @@ class FacadeSingletonController:
         return relatorio.gerar()
 
     def desfazer_atualizacao_produto(self, produto_id: int):
-        return self._gerenciador_produtos.desfazer_atualizacao_produto(produto_id)
+        command = DesfazerAtualizacaoProdutoCommand(
+            self._gerenciador_produtos,
+            produto_id,
+        )
+
+        return command.execute()
